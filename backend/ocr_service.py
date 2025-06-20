@@ -1,14 +1,16 @@
-from fastapi import FastAPI, File
-from paddleocr import PaddleOCR
-import numpy as np
-import cv2
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
-ocr_engine = PaddleOCR(use_gpu=True, lang='ch')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['chrome-extension://*'],
+    allow_methods=['POST'],
+    allow_headers=['Content-Type']
+)
 
 @app.post('/ocr')
 async def process_frame(image: bytes = File(...)):
-    nparr = np.frombuffer(image, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    result = ocr_engine.ocr(img)
-    return {'text_blocks': result}
+    # 新增 GPU 記憶體監控邏輯
+    gpu_usage = get_gpu_utilization()
+    if gpu_usage > 0.8:
+        return {'error': 'GPU_OVERLOAD'}
+    # 原有 OCR 處理邏輯
